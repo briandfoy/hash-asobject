@@ -3,7 +3,35 @@ package Hash::AsObject;
 use strict;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = '0.04';
+$VERSION = '0.05';
+
+sub VERSION {
+    return $VERSION
+        unless ref($_[0]);
+    scalar @_ > 1 ? $_[0]->{'VERSION'} = $_[1] : $_[0]->{'VERSION'};
+}
+
+sub can {
+    return scalar @_ > 1 ? $_[0]->{'can'} = $_[1] : $_[0]->{'can'}
+        if ref($_[0]);
+    die "Usage: UNIVERSAL::can(object-ref, method)"
+        unless scalar @_ > 1;
+    return UNIVERSAL::can($_[0], $_[1]);
+}
+
+sub import {
+    return
+        unless ref($_[0]);
+    scalar @_ > 1 ? $_[0]->{'import'} = $_[1] : $_[0]->{'import'};
+}
+
+sub isa {
+    return scalar @_ > 1 ? $_[0]->{'isa'} = $_[1] : $_[0]->{'isa'}
+        if ref($_[0]);
+    die "Usage: UNIVERSAL::isa(reference, kind)"
+        unless scalar @_ > 1;
+    return UNIVERSAL::can($_[0], $_[1]);
+}
 
 sub AUTOLOAD {
     my $self = shift;
@@ -124,31 +152,82 @@ A Hash::AsObject is a blessed hash that provides read-write
 access to its elements using accessors.  (Actually, they're both accessors
 and mutators.)
 
-It's designed to act as much like plain hashes as possible: for example,
-non-existing elements are autovivified just as they would be in a regular
-hash.
+It's designed to act as much like a plain hash as possible; this means, for
+example, that you can use methods like C<DESTROY> and if the Hash::AsObject has an element
+with that name, it'll get or set it.  See below for more information.
 
-=head1 PUBLIC METHODS
+=head1 METHODS
+
+The whole point of this module is to provide arbitrary methods.  For the most part,
+these are defined at runtime by a specially written C<AUTOLOAD> function.
+
+In order to behave properly in all cases, however, a number of special methods and
+functions must be supported.  Some of these are defined while others are simply emulated
+in AUTOLOAD.
+
+All of the following work Do The Right Thing when called on an
+instance of Hash::AsObject B<and> when called as class methods.  What this means in
+practical terms is that you never have to worry that you'll accidentally call a "magic"
+method 
 
 =over 4
 
 =item B<new>
 
-   $h = Hash::AsObject->new;
-   $h = Hash::AsObject->new(\%some_hash);
-   $h = Hash::AsObject->new(%some_other_hash);
+    $h = Hash::AsObject->new;
+    $h = Hash::AsObject->new(\%some_hash);
+    $h = Hash::AsObject->new(%some_other_hash);
 
 Create a new L<Hash::AsObject|Hash::AsObject>.
 
-=back
+If called as an instance method, this accesses a hash element 'new':
 
-B<NOTE:> Technically, there aren't B<any> public methods defined in
-the Hash::AsObject package, but a standard C<new> class method is
-emulated using AUTOLOAD.
+    $h->{'new'} = 123;
+    $h->new;       # 123
+    $h->new(456);  # 456
+
+=item AUTOLOAD
+
+
+    $h->AUTOLOAD($val);
+    $val = $h->AUTOLOAD;
+
+=item DESTROY
+
+C<DESTROY> is called automatically by the Perl runtime when an object goes out of scope.  A Hash::AsObject
+can't distinguish this from a call to access the element $h->{'DESTROY'}, but this
+isn't a problem.
+
+=item VERSION
+
+When called as a class method, this returns C<$Hash::AsObject::VERSION>; when called as
+an instance method, it gets or sets the hash element 'VERSION';
+
+=item import
+
+=item can
+
+The methods C<can()> and C<isa()> are special, because they're defined in the
+C<UNIVERSAL> class that all packages automatically inherit from.  In Perl, you can
+usually use calls C<< $object->isa('Foo') >> and C<< $object->can('bar') >> and
+get the desired results, but you have the options to use C<UNIVERSAL::can()> and
+C<UNIVERSAL::isa()> directly instead.
+
+In Hash::AsObject, you B<must> use the C<UNIVERSAL> functions - unless, of course,
+you want to access hash elements 'can' and 'isa'!
+
+Just as in C<UNIVERSAL::can()>, a call to C<< Hash::AsObject->can() >> throws an exception
+if no argument is provided.  The same is true for C<isa()>. 
+
+=item isa
+
+See C<can()> above.
+
+=back
 
 =head1 CAVEATS
 
-No distinction is made between non-existent elements and those are
+No distinction is made between non-existent elements and those that are
 present but undefined.  Furthermore, there's no way to delete an
 element without resorting to C<< delete $h->{'foo'} >>.
 
@@ -191,6 +270,8 @@ Let me know if you have any thoughts on this.
 
 =head1 BUGS
 
+Autovivification is probably not emulated correctly.
+
 The blessing of hashes stored in a Hash::AsObject might be
 considered a bug.  Or a feature; it depends on your point of view.
 
@@ -229,7 +310,7 @@ hash, or (b) defining methods besides AUTOLOAD. Hmmm...
 
 =head1 VERSION
 
-0.04
+0.05
 
 =head1 AUTHOR
 
