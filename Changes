@@ -1,0 +1,43 @@
+# Change log for Perl module Hash::AsObject
+
+---
+version: 0.01
+date:    09 Sep 2003
+changes:
+  - Basic functionality, all in AUTOLOAD().
+
+---
+version: 0.02
+date:    10 Sep 2003
+changes:
+  - >
+    To speed things up, AUTOLOAD() now defines accessor methods,
+    which means it's only called once for each key.
+  - >
+    Revised tests to catch a silly coding mistake (blessing
+    things into main).
+  - >
+    Added test for $foo->bar($myhash)->baz
+  - >
+    Documented the fact that hashes stored into a Hash::ObjectLike
+    are always blessed as a result.
+
+---
+version: 0.03
+date:    25 Sep 2003
+changes:
+  - >
+    Added support for Hash::ObjectLike->new( foo => 123, bar => 456 )
+    flavor in addition to Hash::ObjectLike->new( {foo => 123, bar => 456} )
+  - >
+    Fixed: $obj->AUTOLOAD resulted in Hash::ObjectLike::AUTOLOAD
+    being redefined
+  - >
+    Improved handling of $obj->DESTROY
+
+---
+version: 0.04
+date:    11 Mar 2004
+changes:
+  - >
+    Changed name to Hash::AsObject
