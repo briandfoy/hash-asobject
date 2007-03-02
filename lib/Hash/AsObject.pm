@@ -3,7 +3,7 @@ package Hash::AsObject;
 use strict;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = '0.05';
+$VERSION = '0.07';
 
 sub VERSION {
     return $VERSION
@@ -12,11 +12,11 @@ sub VERSION {
 }
 
 sub can {
-    return scalar @_ > 1 ? $_[0]->{'can'} = $_[1] : $_[0]->{'can'}
-        if ref($_[0]);
+    # $obj->can($method)
+    # $cls->can($method)
     die "Usage: UNIVERSAL::can(object-ref, method)"
-        unless scalar @_ > 1;
-    return UNIVERSAL::can($_[0], $_[1]);
+        unless @_ == 2;
+    return 1;  # We can `do' anything
 }
 
 sub import {
@@ -25,13 +25,55 @@ sub import {
     scalar @_ > 1 ? $_[0]->{'import'} = $_[1] : $_[0]->{'import'};
 }
 
-sub isa {
-    return scalar @_ > 1 ? $_[0]->{'isa'} = $_[1] : $_[0]->{'isa'}
-        if ref($_[0]);
-    die "Usage: UNIVERSAL::isa(reference, kind)"
-        unless scalar @_ > 1;
-    return UNIVERSAL::can($_[0], $_[1]);
-}
+# sub isa {
+# 
+#     # $obj->isa($class)
+#     # $cls->isa($class)
+# 
+#     return UNIVERSAL::isa(@_);
+#     
+#     # Hash::AsObject::isa()
+#     return unless scalar @_;
+#     
+#     my $invocant = shift;
+#     
+#     # Hash::AsObject->isa($foo, $etc)
+#     # $obj->isa($other, $etc)
+#     die "Too many arguments" if scalar(@_) > 1;
+#     
+#     my $iref = ref($invocant);
+#     
+#     # Hash::AsObject->isa
+#     # Hash::AsObject::isa($class_name_or_other_scalar)
+#     die "Too few arguments" unless $iref or scalar @_;
+#     
+#     # Hash::AsObject->isa($foo)
+#     if ($iref) {
+#         if (scalar @_) {
+#             # $obj->isa(...)
+#         } else {
+#             # $obj->isa
+#         }
+#     } else {
+#         return UNIVERSAL::isa($invocant, @_);
+#     }
+#     # $obj->isa('Hash::AsObject')
+#     # $obj->isa($other)
+# 
+#     # XXX Not quite right XXX
+#     return __PACKAGE__->isa($_[0])
+#         unless ref $_[0];     # Hash::AsObject::isa($class_name_or_other_scalar)
+# 
+#     # --- The most likely case:
+#     # $obj->isa($cls);        -- most likely case
+#     # $cls->isa($other_cls);  -- OK, this might happen
+#     # Hash::AsObject::isa($non_scalar, ...);  -- unlikely!!
+#     return ref($_[0])->isa($_[1])
+#         if scalar @_ > 1;
+#     # $obj->isa;        -- not very likely
+#     return $_[0]->{'isa'} if exists $_[0]->{'isa'};
+#     return undef;
+# }
 
 sub AUTOLOAD {
     my $self = shift;
@@ -71,7 +113,6 @@ sub AUTOLOAD {
             # --- All other class methods disallowed
             die "Can't invoke class method '$key' on a Hash::AsObject object";
         }
-        # --- TO DO: treat can() and isa() specially?
     } elsif ($key eq 'DESTROY') {
         # --- This is tricky.  There are four distinct cases:
         #       (1) $self->DESTROY($val)
@@ -99,7 +140,7 @@ sub AUTOLOAD {
     
     # --- If someone's called $obj->AUTOLOAD
     if ($key eq 'AUTOLOAD') {
-        # --- Tread carefully -- we can't define &Hash::AsObject::AUTOLOAD
+        # --- Tread carefully -- we can't (re)define &Hash::AsObject::AUTOLOAD
         #     because that would ruin everything
         return scalar(@_) ? $self->{'AUTOLOAD'} = shift : $self->{'AUTOLOAD'};
     } else {
@@ -153,22 +194,17 @@ access to its elements using accessors.  (Actually, they're both accessors
 and mutators.)
 
 It's designed to act as much like a plain hash as possible; this means, for
-example, that you can use methods like C<DESTROY> and if the Hash::AsObject has an element
-with that name, it'll get or set it.  See below for more information.
+example, that you can use methods like C<DESTROY> to get or set hash elements
+with that name.  See below for more information.
 
 =head1 METHODS
 
-The whole point of this module is to provide arbitrary methods.  For the most part,
-these are defined at runtime by a specially written C<AUTOLOAD> function.
+The whole point of this module is to provide arbitrary methods.  For the most
+part, these are defined at runtime by a specially written C<AUTOLOAD> function.
 
-In order to behave properly in all cases, however, a number of special methods and
-functions must be supported.  Some of these are defined while others are simply emulated
-in AUTOLOAD.
-
-All of the following work Do The Right Thing when called on an
-instance of Hash::AsObject B<and> when called as class methods.  What this means in
-practical terms is that you never have to worry that you'll accidentally call a "magic"
-method 
+In order to behave properly in all cases, however, a number of special methods
+and functions must be supported.  Some of these are defined while others are
+simply emulated in AUTOLOAD.
 
 =over 4
 
@@ -186,26 +222,51 @@ If called as an instance method, this accesses a hash element 'new':
     $h->new;       # 123
     $h->new(456);  # 456
 
-=item AUTOLOAD
+=item B<isa>
 
+This method cannot be used to access a hash element 'isa', because
+Hash::AsObject doesn't attempt to handle it specially.
 
-    $h->AUTOLOAD($val);
-    $val = $h->AUTOLOAD;
+=item B<can>
 
-=item DESTROY
+Similarly, this can't be used to access a hash element 'can'.
 
-C<DESTROY> is called automatically by the Perl runtime when an object goes out of scope.  A Hash::AsObject
-can't distinguish this from a call to access the element $h->{'DESTROY'}, but this
-isn't a problem.
+=item B<AUTOLOAD>
 
-=item VERSION
+    $h->{'AUTOLOAD'} = 'abc';
+    $h->AUTOLOAD;       # 'abc'
+    $h->AUTOLOAD('xyz') # 'xyz'
 
-When called as a class method, this returns C<$Hash::AsObject::VERSION>; when called as
-an instance method, it gets or sets the hash element 'VERSION';
+Hash::AsObject::AUTOLOAD recognizes when AUTOLOAD is begin called as an
+instance method, and treats this as an attempt to get or set the 'AUTOLOAD'
+hash element.
 
-=item import
+=item B<DESTROY>
 
-=item can
+    $h->{'DESTROY'} = [];
+    $h->DESTROY;    # []
+    $h->DESTROY({}) # {}
+
+C<DESTROY> is called automatically by the Perl runtime when an object goes out
+of scope.  A Hash::AsObject can't distinguish this from a call to access the
+element $h->{'DESTROY'}, and so it blithely gets (or sets) the hash's 'DESTROY'
+element; this isn't a problem, since the Perl interpreter discards any value
+that DESTROY returns when called automatically.
+
+=item B<VERSION>
+
+When called as a class method, this returns C<$Hash::AsObject::VERSION>; when
+called as an instance method, it gets or sets the hash element 'VERSION';
+
+=item B<import>
+
+Since L<Hash::AsObject|Hash::AsObject> doesn't export any symbols, this method
+has no special significance and you can safely call it as a method to get or
+set an 'import' element.
+
+When called as a class method, nothing happens.
+
+=back
 
 The methods C<can()> and C<isa()> are special, because they're defined in the
 C<UNIVERSAL> class that all packages automatically inherit from.  In Perl, you can
@@ -218,12 +279,6 @@ you want to access hash elements 'can' and 'isa'!
 
 Just as in C<UNIVERSAL::can()>, a call to C<< Hash::AsObject->can() >> throws an exception
 if no argument is provided.  The same is true for C<isa()>. 
-
-=item isa
-
-See C<can()> above.
-
-=back
 
 =head1 CAVEATS
 
@@ -310,7 +365,7 @@ hash, or (b) defining methods besides AUTOLOAD. Hmmm...
 
 =head1 VERSION
 
-0.05
+0.06
 
 =head1 AUTHOR
 

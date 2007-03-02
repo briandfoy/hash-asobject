@@ -1,10 +1,13 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Hash-AsObject
-version:      0.05
-version_from: lib/Hash/AsObject.pm
-installdirs:  site
-requires:
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.20
+--- #YAML:1.0
+name:                Hash-AsObject
+version:             0.07
+abstract:            ~
+license:             ~
+generated_by:        ExtUtils::MakeMaker version 6.32
+distribution_type:   module
+requires:     
+meta-spec:
+    url:     http://module-build.sourceforge.net/META-spec-v1.2.html
+    version: 1.2
+author:
+    - Paul Hoffman <nkuitse AT cpan DOT org>

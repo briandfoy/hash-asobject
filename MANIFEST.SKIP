@@ -5,6 +5,9 @@ blib
 blibdirs
 pm_to_blib
 ^Makefile$
-Mkaefile\.(old|bak)
+Makefile\.(old|bak)
 MANIFEST.bak
 Hash-AsObject-\d+
+^\.podge
+^_darcs
+\.swp$

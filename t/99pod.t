@@ -1,24 +1,13 @@
-#!/usr/bin/perl -w
+use strict;
+use warnings;
 
 use Test::More;
 
-use strict;
-
 $| = 1;
 
-eval "use Test::Pod 0.95";
-eval "use File::Spec" unless $@;
-eval "use File::Find" unless $@;
+eval "use Test::Pod 1.00";
 
-if ($@) {
-    plan 'skip_all', 'File::Spec, File::Find, and Test::Pod 0.95 required for testing POD';
-} else {
-    Test::Pod->import;
-    my @files;
-    my $blib = File::Spec->catfile(qw(blib lib));
-    my $warning_thwarter = $File::Find::name;
-    find( sub { push @files, $File::Find::name if /\.p(l|m|od)$/ }, $blib);
-    plan 'tests', scalar @files;
-    pod_file_ok($_) foreach (@files);
-}
+plan 'skip_all' => "Test::Pod 1.00 required for testing POD"
+    if $@;
 
+all_pod_files_ok();

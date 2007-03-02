@@ -1,6 +1,20 @@
 # Change log for Perl module Hash::AsObject
 
 ---
+version: 0.07
+date:    02 Mar 2007
+changes:
+  - Improve documentation of special methods
+  - can() and isa() are now (semi-)special again
+
+---
+version: 0.06 (unreleased)
+date:    05 Mar 2006
+changes:
+  - >
+    Fixed typo in isa (was calling UNIVERSAL::can instead of UNIVERSAL::isa)
+
+---
 version: 0.05
 date:    28 Apr 2004
 changes:
