@@ -3,7 +3,7 @@ package Hash::AsObject;
 use strict;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = '0.07';
+$VERSION = '0.09';
 
 sub VERSION {
     return $VERSION
@@ -176,7 +176,7 @@ EOS
 
 =head1 NAME
 
-Hash::AsObject - hashes with accessors/mutators
+Hash::AsObject - treat hashes as objects, with arbitrary accessors/mutators
 
 =head1 SYNOPSIS
 
@@ -269,16 +269,9 @@ When called as a class method, nothing happens.
 =back
 
 The methods C<can()> and C<isa()> are special, because they're defined in the
-C<UNIVERSAL> class that all packages automatically inherit from.  In Perl, you can
-usually use calls C<< $object->isa('Foo') >> and C<< $object->can('bar') >> and
-get the desired results, but you have the options to use C<UNIVERSAL::can()> and
-C<UNIVERSAL::isa()> directly instead.
-
-In Hash::AsObject, you B<must> use the C<UNIVERSAL> functions - unless, of course,
-you want to access hash elements 'can' and 'isa'!
-
-Just as in C<UNIVERSAL::can()>, a call to C<< Hash::AsObject->can() >> throws an exception
-if no argument is provided.  The same is true for C<isa()>. 
+C<UNIVERSAL> class that all packages automatically inherit from.  Unfortunately,
+this means that you can't use L<Hash::AsObject|Hash::AsObject> to access elements
+'can' and 'isa'.
 
 =head1 CAVEATS
 
@@ -384,7 +377,7 @@ Made me yearn to write Perl code like this:
 
 =head1 COPYRIGHT
 
-Copyright 2003 Paul M. Hoffman. All rights reserved.
+Copyright 2003-2007 Paul M. Hoffman. All rights reserved.
 
 This program is free software; you can redistribute it
 and modify it under the same terms as Perl itself. 

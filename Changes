@@ -1,6 +1,13 @@
 # Change log for Perl module Hash::AsObject
 
 ---
+version: 0.09
+date:    01 Apr 2007
+changes:
+  - Fix documentation bugs (reported by Ricardo Signes and Thomas Linden)
+note: version 0.08 was never released because of a technical glitch
+
+---
 version: 0.07
 date:    02 Mar 2007
 changes:
