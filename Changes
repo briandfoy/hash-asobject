@@ -1,6 +1,15 @@
 # Change log for Perl module Hash::AsObject
 
 ---
+version: 0.10
+date:    20 Jan 2008
+changes:
+  - enable subclassing (rt.cpan.org #32140)
+  - can() now returns a code ref, not 1 (rt.cpan.org #32141)
+  - define autoloaded methods without using string eval (rt.cpan.org #32146)
+note: Thanks to Florian Ragwitz for finding and reporting these bugs
+
+---
 version: 0.09
 date:    01 Apr 2007
 changes:

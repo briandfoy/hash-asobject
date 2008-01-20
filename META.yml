@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Hash-AsObject
-version:             0.09
+version:             0.10
 abstract:            ~
 license:             ~
 generated_by:        ExtUtils::MakeMaker version 6.32

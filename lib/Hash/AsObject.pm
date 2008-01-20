@@ -3,7 +3,7 @@ package Hash::AsObject;
 use strict;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = '0.09';
+$VERSION = '0.10';
 
 sub VERSION {
     return $VERSION
@@ -16,7 +16,27 @@ sub can {
     # $cls->can($method)
     die "Usage: UNIVERSAL::can(object-ref, method)"
         unless @_ == 2;
-    return 1;  # We can `do' anything
+    my ($invocant, $method) = @_;
+    # --- Define a stub method in this package (to speed up later invocations)
+    my $cls = ref($invocant) || $invocant;
+    no strict 'refs';
+    return sub {
+        my $v;
+        if (scalar @_ > 1) {
+            $v = $_[0]->{$method} = $_[1];
+            return undef unless defined $v;
+        }
+        else {
+            $v = $_[0]->{$method};
+        }
+        if (ref($v) eq 'HASH') {
+            bless $v, $cls;
+        }
+        else {
+            $v;
+        }
+
+    };
 }
 
 sub import {
@@ -25,64 +45,15 @@ sub import {
     scalar @_ > 1 ? $_[0]->{'import'} = $_[1] : $_[0]->{'import'};
 }
 
-# sub isa {
-# 
-#     # $obj->isa($class)
-#     # $cls->isa($class)
-# 
-#     return UNIVERSAL::isa(@_);
-#     
-#     # Hash::AsObject::isa()
-#     return unless scalar @_;
-#     
-#     my $invocant = shift;
-#     
-#     # Hash::AsObject->isa($foo, $etc)
-#     # $obj->isa($other, $etc)
-#     die "Too many arguments" if scalar(@_) > 1;
-#     
-#     my $iref = ref($invocant);
-#     
-#     # Hash::AsObject->isa
-#     # Hash::AsObject::isa($class_name_or_other_scalar)
-#     die "Too few arguments" unless $iref or scalar @_;
-#     
-#     # Hash::AsObject->isa($foo)
-#     if ($iref) {
-#         if (scalar @_) {
-#             # $obj->isa(...)
-#         } else {
-#             # $obj->isa
-#         }
-#     } else {
-#         return UNIVERSAL::isa($invocant, @_);
-#     }
-#     # $obj->isa('Hash::AsObject')
-#     # $obj->isa($other)
-# 
-#     # XXX Not quite right XXX
-#     return __PACKAGE__->isa($_[0])
-#         unless ref $_[0];     # Hash::AsObject::isa($class_name_or_other_scalar)
-# 
-#     # --- The most likely case:
-#     # $obj->isa($cls);        -- most likely case
-#     # $cls->isa($other_cls);  -- OK, this might happen
-#     # Hash::AsObject::isa($non_scalar, ...);  -- unlikely!!
-#     return ref($_[0])->isa($_[1])
-#         if scalar @_ > 1;
-#     # $obj->isa;        -- not very likely
-#     return $_[0]->{'isa'} if exists $_[0]->{'isa'};
-#     return undef;
-# }
-
 sub AUTOLOAD {
-    my $self = shift;
+    my $invocant = shift;
     my $key = $AUTOLOAD;
-    
+
     # --- Figure out which hash element we're dealing with
     if (defined $key) {
         $key =~ s/.*:://;
-    } else {
+    }
+    else {
         # --- Someone called $obj->AUTOLOAD -- OK, that's fine, be cool
         # --- Or they might have called $cls->AUTOLOAD, but we'll catch
         #     that below
@@ -96,7 +67,7 @@ sub AUTOLOAD {
     undef $AUTOLOAD;
     
     # --- Handle special cases: class method invocations, DESTROY, etc.
-    if (ref($self) eq '') {
+    if (ref($invocant) eq '') {
         # --- Class method invocation
         if ($key eq 'import') {
             # --- Ignore $cls->import
@@ -108,64 +79,64 @@ sub AUTOLOAD {
                     ? shift   # $cls->new({ foo => $bar, ... })
                     : { @_ }  # $cls->new(  foo => $bar, ...  )
                     ;
-            return bless $elems, __PACKAGE__;
-        } else {
+            return bless $elems, $invocant;
+        }
+        else {
             # --- All other class methods disallowed
             die "Can't invoke class method '$key' on a Hash::AsObject object";
         }
     } elsif ($key eq 'DESTROY') {
         # --- This is tricky.  There are four distinct cases:
-        #       (1) $self->DESTROY($val)
-        #       (2) $self->DESTROY()
-        #           (2a) $self->{DESTROY} exists and is defined
-        #           (2b) $self->{DESTROY} exists but is undefined
-        #           (2c) $self->{DESTROY} doesn't exist
+        #       (1) $invocant->DESTROY($val)
+        #       (2) $invocant->DESTROY()
+        #           (2a) $invocant->{DESTROY} exists and is defined
+        #           (2b) $invocant->{DESTROY} exists but is undefined
+        #           (2c) $invocant->{DESTROY} doesn't exist
         #     Case 1 will never happen automatically, so we handle it normally
-        #     In case 2a, we must return the value of $self->{DESTROY} but not
+        #     In case 2a, we must return the value of $invocant->{DESTROY} but not
         #       define a method Hash::AsObject::DESTROY
         #     The same is true in case 2b, it's just that the value is undefined
         #     Since we're striving for perfect emulation of hash access, case 2c
         #       must act just like case 2b.
-        return $self->{'DESTROY'}          # Case 2c -- autovivify
+        return $invocant->{'DESTROY'}          # Case 2c -- autovivify
         unless
             scalar @_                      # Case 1
-            or exists $self->{'DESTROY'};  # Case 2a or 2b
+            or exists $invocant->{'DESTROY'};  # Case 2a or 2b
     }
     
     # --- Handle the most common case (by far)...
     
     # --- All calls like $obj->foo(1, 2) must fail spectacularly
     die "Too many arguments"
-        if scalar(@_) > 1;  # We've already shift()ed $self off of @_
+        if scalar(@_) > 1;  # We've already shift()ed $invocant off of @_
     
     # --- If someone's called $obj->AUTOLOAD
     if ($key eq 'AUTOLOAD') {
         # --- Tread carefully -- we can't (re)define &Hash::AsObject::AUTOLOAD
         #     because that would ruin everything
-        return scalar(@_) ? $self->{'AUTOLOAD'} = shift : $self->{'AUTOLOAD'};
-    } else {
-        # --- Define a stub method in this package (to speed up later invocations)
-        my $src = <<"EOS";
-sub Hash::AsObject::$key {
-    my \$v;
-    if (scalar \@_ > 1) {
-        \$v = \$_[0]->{'$key'} = \$_[1];
-        return undef unless defined \$v;
-    } else {
-        \$v = \$_[0]->{'$key'};
+        return scalar(@_) ? $invocant->{'AUTOLOAD'} = shift : $invocant->{'AUTOLOAD'};
     }
-    if (ref(\$v) eq 'HASH') {
-        bless \$v, 'Hash::AsObject';
-    } else {
-        \$v;
-    }
-#    return ref(\$v) eq 'HASH' ? bless(\$v, 'Hash::AsObject') : \$v;
-}
-EOS
-        eval $src;
-        die "Couldn't define method Hash::AsObject::$key -- $@"
-            if $@;
-        unshift @_, $self;
+    else {
+        my $cls = ref($invocant) || $invocant;
+        no strict 'refs';
+        *{ "${cls}::$key" } = sub {
+            my $v;
+            if (scalar @_ > 1) {
+                $v = $_[0]->{$key} = $_[1];
+                return undef unless defined $v;
+            }
+            else {
+                $v = $_[0]->{$key};
+            }
+            if (ref($v) eq 'HASH') {
+                bless $v, $cls;
+            }
+            else {
+                $v;
+            }
+
+        };
+        unshift @_, $invocant;
         goto &$key;
     }
 }
