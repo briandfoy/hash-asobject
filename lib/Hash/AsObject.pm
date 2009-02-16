@@ -3,7 +3,7 @@ package Hash::AsObject;
 use strict;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = '0.10';
+$VERSION = '0.11';
 
 sub VERSION {
     return $VERSION
