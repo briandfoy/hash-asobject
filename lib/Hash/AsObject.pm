@@ -3,7 +3,7 @@ package Hash::AsObject;
 use strict;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 sub VERSION {
     return $VERSION
@@ -137,7 +137,7 @@ sub AUTOLOAD {
 
         };
         unshift @_, $invocant;
-        goto &$key;
+        goto &{ "${cls}::$key" };
     }
 }
 
