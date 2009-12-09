@@ -1,6 +1,12 @@
 # Change log for Perl module Hash::AsObject
 
 ---
+version: 0.13
+date:    09 Dec 2009
+changes:
+  - oops, forgot to include test for infinite recursion
+
+---
 version: 0.12
 date:    09 Dec 2009
 changes:

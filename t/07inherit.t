@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use diagnostics;
 
-use Test::More tests => 2;
+use Test::More tests => 4;
 
 use_ok( 'Hash::AsObject' );
 
@@ -15,6 +15,8 @@ my $foo = *Hash::AsObject::Foo::AUTOLOAD;  # Suppress "used only once" warning
 
 package main;
 
-is( ref(Hash::AsObject::Foo->new), 'Hash::AsObject::Foo', 'blessing' );
+my $hash = Hash::AsObject::Foo->new;
+is( ref($hash), 'Hash::AsObject::Foo', 'blessing' );
 
-
+is( $hash->abc('123'), 123, 'set scalar' );
+is( $hash->abc, 123, 'get scalar' );
